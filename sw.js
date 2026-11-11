@@ -1,7 +1,7 @@
 /* En Ruta — Service Worker
    Cachea la app completa para funcionar sin internet.
    Sube la versión cuando actualices archivos. */
-const VERSION = 'enruta-v1.0.4';
+const VERSION = 'enruta-v1.0.5';
 const CACHE = VERSION;
 
 const ASSETS = [
@@ -16,6 +16,7 @@ const ASSETS = [
   './js/views-rutas.js',
   './js/views-equipo.js',
   './js/views-gestion.js',
+  './js/sync.js',
   './js/app.js',
   './icons/icon-192.png',
   './icons/icon-512.png',

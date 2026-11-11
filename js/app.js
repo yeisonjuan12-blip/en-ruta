@@ -170,6 +170,7 @@
 
     ER.render();
     registrarSW();
+    try { if (ER.sync && ER.sync.onBoot) ER.sync.onBoot(); } catch (e) { /* sync opcional */ }
 
     /* Ayuda al primer uso */
     if (!ER.S.motorizados.length) {

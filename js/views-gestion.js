@@ -606,6 +606,10 @@
       const plin = ER.S.config.plin;
       const logo = c.logo || 'logo.svg';
       const pwaInstalada = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      const syncOn = !!(ER.sync && ER.sync.connected());
+      const syncAuto = !!(ER.sync && ER.sync.auto());
+      const syncLast = ER.sync ? ER.sync.last() : '';
+      const syncGist = ER.sync ? ER.sync.gistId() : '';
 
       return `
       <div class="grid split-2-1">
@@ -702,9 +706,9 @@
           </div>
 
           <div class="card mb-16">
-            <div class="card-h"><div><h3>Datos y respaldos</h3><div class="sub">Todo se guarda en este dispositivo</div></div></div>
+            <div class="card-h"><div><h3>Datos y respaldos</h3><div class="sub">Copia local y sincronización opcional</div></div></div>
             <div class="card-b">
-              <div class="row gap-8 mb-12">${ER.icon('lock')}<div class="grow"><div class="bold small">Privado y sin login</div><div class="xs muted">No se envía nada a ningún servidor. Si borras los datos del navegador, se pierden: descarga respaldos.</div></div></div>
+              <div class="row gap-8 mb-12">${ER.icon('lock')}<div class="grow"><div class="bold small">Privado y sin login</div><div class="xs muted">Por defecto los datos se guardan solo en este navegador. Si activas la sincronización, se guarda una copia privada en tu cuenta de GitHub.</div></div></div>
               <label class="switch" style="width:100%;justify-content:space-between">
                 <span>Respaldo automático diario</span>
                 <input type="checkbox" id="aj-backup" ${c.autoBackup ? 'checked' : ''}>
@@ -720,11 +724,49 @@
             </div>
           </div>
 
+          <div class="card mb-16">
+            <div class="card-h"><div><h3>Sincronización entre dispositivos</h3><div class="sub">Mismos datos en tu celular y en tu laptop</div></div><span class="badge ${syncOn ? 'green' : 'outline'}">${syncOn ? 'Conectado' : 'Sin conectar'}</span></div>
+            <div class="card-b">
+              ${syncOn ? `
+                <div class="row gap-8 mb-12">
+                  ${ER.icon('refresh')}
+                  <div class="grow">
+                    <div class="bold small">Sincronización automática</div>
+                    <div class="xs muted">Última: ${syncLast ? ER.fmtDateTime(syncLast) : '—'}${syncGist ? ' · Copia ' + ER.esc(syncGist.slice(0, 8)) : ''}</div>
+                  </div>
+                  <label class="switch" title="Activar o desactivar la sincronización automática">
+                    <input type="checkbox" id="aj-sync-auto" ${syncAuto ? 'checked' : ''}>
+                    <span class="track"></span>
+                  </label>
+                </div>
+                <div class="row gap-8 wrap">
+                  <button class="btn sm" data-action="sync-pull">${ER.icon('download')} Bajar de la nube</button>
+                  <button class="btn sm" data-action="sync-push">${ER.icon('upload')} Subir ahora</button>
+                  <button class="btn sm danger" data-action="sync-disconnect">Desconectar</button>
+                </div>
+                <div class="xs muted mt-8">Para ver estos mismos datos en otro dispositivo, pega allí el <b>mismo token</b>.</div>
+                <div class="alert yellow mt-12" style="padding:9px 12px">
+                  <div class="a-icon" style="width:26px;height:26px">${ER.icon('alert', 'sm')}</div>
+                  <div class="a-text" style="margin:0">Si dos dispositivos editan sin internet al mismo tiempo, se conserva el último cambio que se guarde.</div>
+                </div>
+              ` : `
+                <p class="small muted" style="margin:0 0 10px">Pega un token de GitHub con permiso <b>gist</b>. Se guarda una copia privada de tus datos y se comparte entre tus dispositivos. Es opcional: sin esto la app sigue funcionando offline.</p>
+                <div class="field">
+                  <label>Token de GitHub (solo permiso gist)</label>
+                  <input class="input" type="password" id="aj-sync-token" placeholder="ghp_…" autocomplete="off">
+                  <div class="hint">No se incluye en los respaldos. Puedes revocarlo cuando quieras.</div>
+                </div>
+                <button class="btn primary block" data-action="sync-connect">${ER.icon('refresh')} Conectar y sincronizar</button>
+                <div class="xs muted mt-8">Crea el token en <a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=en-ruta-sync" target="_blank" rel="noopener">github.com/settings/tokens</a> marcando solo <b>gist</b>.</div>
+              `}
+            </div>
+          </div>
+
           <div class="card">
             <div class="card-h"><div><h3>Acerca de</h3><div class="sub">En Ruta · Nuevo Chimbote</div></div></div>
             <div class="card-b">
               <div class="small muted">Versión ${ER.VERSION} · PWA offline</div>
-              <div class="xs muted mt-4">Sistema privado de administración de delivery. Sin login, sin PIN, sin servidores. Los datos quedan en tu navegador y puedes respaldarlos cuando quieras.</div>
+              <div class="xs muted mt-4">Sistema privado de administración de delivery. Funciona offline, sin login ni PIN. Los datos quedan en tu navegador y la sincronización entre dispositivos es opcional.</div>
               <div class="divider"></div>
               <button class="btn primary block" data-action="ajustes-guardar">${ER.icon('check')} Guardar ajustes</button>
             </div>
@@ -749,7 +791,41 @@
         ER.save();
         ER.toast(backup.checked ? 'Respaldo automático activado' : 'Respaldo automático desactivado', 'ok');
       });
+      const syncAuto = root.querySelector('#aj-sync-auto');
+      if (syncAuto) syncAuto.addEventListener('change', () => {
+        ER.sync.setAuto(syncAuto.checked);
+        ER.toast(syncAuto.checked ? 'Sincronización automática activada' : 'Sincronización automática desactivada', 'ok');
+      });
     }
+  };
+
+  ER.actions['sync-connect'] = async () => {
+    const input = document.getElementById('aj-sync-token');
+    if (!input) return;
+    const token = input.value.trim();
+    if (!token) { ER.toast('Pega el token de GitHub', 'err'); input.focus(); return; }
+    ER.toast('Conectando con GitHub…', 'ok', 2500);
+    const ok = await ER.sync.connect(token);
+    ER.render();
+    if (!ok) return;
+  };
+
+  ER.actions['sync-push'] = async () => {
+    const ok = await ER.sync.push(true);
+    if (ok) ER.render();
+  };
+
+  ER.actions['sync-pull'] = async () => {
+    await ER.sync.pull();
+    ER.render();
+  };
+
+  ER.actions['sync-disconnect'] = async () => {
+    const ok = await ER.confirm(
+      '¿Desactivar la sincronización en este dispositivo? Los datos locales no se borran y la copia en GitHub se conserva.',
+      { title: 'Desconectar', danger: true, ok: 'Desconectar' }
+    );
+    if (ok) ER.sync.disconnect();
   };
 
   ER.actions['ajustes-guardar'] = () => {

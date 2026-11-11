@@ -9,7 +9,7 @@
   ER.actions = ER.actions || {};
 
   /* ------------------------------ Constantes ------------------------------ */
-  ER.VERSION = '1.0.4';
+  ER.VERSION = '1.0.5';
   ER.APP = 'En Ruta';
   ER.DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
   ER.DIAS_CORTOS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -190,6 +190,7 @@
       }
       localStorage.setItem(KEY, JSON.stringify(ER.S));
       ER.updateNavBadges();
+      try { if (ER.sync && ER.sync.onSave) ER.sync.onSave(); } catch (e) { /* sync opcional */ }
       return true;
     } catch (e) {
       console.error(e);

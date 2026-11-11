@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="En Ruta">
+  <rect width="512" height="512" rx="116" fill="#FFC400"/>
+  <g fill="none" stroke="#0B0B0B" stroke-width="56" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M133 388V246h204V151"/>
+  </g>
+  <circle cx="133" cy="388" r="34" fill="#0B0B0B"/>
+  <circle cx="337" cy="133" r="50" fill="#0B0B0B"/>
+  <circle cx="337" cy="133" r="17" fill="#FFC400"/>
+</svg>
